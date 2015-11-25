@@ -17,8 +17,44 @@ var SR = {
        
     }, 
     login: function(){
-        console.log(this.generateUrl()); 
-        //var loginWindow = window.open(this.generateUrl(), "authentication", "width=800, height=450"); 
+        var url = this.generateUrl(); 
+        console.log(url); 
+        var loginWindow = window.open(url, "authentication", "width=800, height=450"); 
+        var self = this; 
+        var intervalId = setInterval(function() {
+            
+            if( loginWindow.closed ){
+                clearInterval(intervalId);
+                return; 
+            }
+            
+            var status = self.getStatus(loginWindow); 
+            if( ! status ) return; 
+            
+            if(status.error){
+                console.log(status.error, status.text); 
+                clearInterval(intervalId);
+            }
+            
+            if (status.done) {
+                clearInterval(intervalId);
+                loginWindow.close(); 
+                window.location = '/home';  
+            }
+            
+        }, 1000);
+        
+    }, 
+    getStatus: function(w){
+       var status = null; 
+       try {
+           var doc = w.document; 
+           status = JSON.parse(doc.getElementById('status').innerHTML); 
+       } catch(e){
+           console.log(e); 
+       }
+       
+       return status; 
     }, 
     generateUrl: function(){
         var config = this.getConfig(); 

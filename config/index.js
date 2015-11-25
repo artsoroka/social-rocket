@@ -1,6 +1,6 @@
-console.log(process.cwd()); 
 module.exports = {
     App: {
+        base_url: 'YOURSITE', 
         port: 8080, 
         sessions: process.cwd() + '/app/sessions' 
     }, 
@@ -19,7 +19,7 @@ module.exports = {
         client_id    : process.env.SR_VK_CLIENT_ID,  
         client_secret: process.env.SR_VK_CLIENT_SECRET, 
        
-        redirect_uri : 'http://polygram-artsoroka1.c9.io/auth/vk',   
+        redirect_uri : '/auth/vk',   
         scope        : ['wall', 'groups', 'video', 'offline'],  
         api_version  : '5.40'
     }
