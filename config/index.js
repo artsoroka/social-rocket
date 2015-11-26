@@ -1,9 +1,15 @@
 module.exports = {
     App: {
-        base_url: 'YOURSITE', 
+        base_url: 'http://polygram-artsoroka1.c9.io', 
         port: 8080, 
         sessions: process.cwd() + '/app/sessions' 
     }, 
+    db: {
+	    user     : process.env.SR_DB_USER || 'dbadmin', 
+	    password : process.env.SR_DB_PSWD, 
+	    database : process.env.SR_DB_NAME || 'socialrocket', 
+	    port	 : process.env.SR_DB_PORT || 3306
+	}, 
     session: {
         name: 'socialrocket', 
         key:  'socialrocket', 

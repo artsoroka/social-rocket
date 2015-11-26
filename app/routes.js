@@ -1,11 +1,79 @@
-var router = require('express').Router(); 
-var config = require('../config'); 
-var vk     = require('./lib/vk'); 
+var router  = require('express').Router(); 
+var Promise = require('bluebird'); 
+var config  = require('../config'); 
+var vk      = require('./lib/vk'); 
+var db      = require('./lib/db'); 
 
 var authRequired = function(req,res,next){
     if(! req.session.user ) 
         return res.send('you should login first'); 
     next(); 
+}; 
+
+var getAccessToken = function(json){
+    console.log('response from vk', json); 
+    return new Promise(function(resolve, reject){
+        if( ! json.access_token ) 
+            return reject('vk oauth response does not contain access token'); 
+            
+        if( ! json.user_id ) 
+            return reject('vk oauth response does not contain user id'); 
+            
+        resolve({
+            token : json.access_token, 
+            userId: json.user_id
+        }); 
+            
+    }); 
+}; 
+
+var authorizeUser = function(settings){
+    return function(vkResponse){
+        return new Promise(function(resolve, reject){
+            console.log('got vkResponse', vkResponse); 
+            
+            db('users')
+                .where({vk_id: vkResponse.userId})
+                .select(['id', 'vk_id'])
+                .then(function(record){
+                    console.log('select', record); 
+                    if( record != false && record.length ) {
+                        console.log('auth success: user found'); 
+                        return resolve({
+                            userId: record[0].id,
+                            vkUserId: vkResponse.userId, 
+                            token : vkResponse.token
+                        }); 
+                    }
+                    
+                    if( ! settings.createIfMissing ) 
+                            return reject('user not found'); 
+                     
+                    console.log('user does not exist. Will create new');  
+                    
+                    db.insert({
+                        vk_id: vkResponse.userId
+                    })
+                    .returning('id')
+                    .into('users')
+                    .then(function (id) {
+                        
+                        resolve({
+                            userId  : id, 
+                            vkUserId: vkResponse.userId, 
+                            token   : vkResponse.token
+                        }); 
+                        
+                    });  
+                    
+                })
+                .catch(function(e){
+                    console.log('db error', e); 
+                    reject(e); 
+                }); 
+                
+        }); 
+    }; 
 }; 
 
 router.get('/', function(req,res){
@@ -54,17 +122,21 @@ router.get('/auth/vk', function(req,res){
         return res.render('auth/oauth', {status: status}); 
     } 
     
-    vk.authorize(code).then(function(response){
-        console.log(response); 
-            
-        req.session.user = {name: 'Vasya'};
-        res.render('auth/oauth', {status: JSON.stringify({done: true})}); 
-         
-    }).catch(function(e){
-        console.log('VK ERROR: ', e); 
-        res.render('auth/oauth', {status: JSON.stringify({error: e})})
-    }); 
-    
-});
+    vk
+        .authorize(code)
+        .then(getAccessToken)
+        .then(authorizeUser({
+            createIfMissing: true
+        }))
+        .then(function(session){
+            req.session.user = session; 
+            res.render('auth/oauth', {status: JSON.stringify({done: true})});
+        })
+        .catch(function(err){
+            console.log('VK ERROR: ', err);  
+            res.render('auth/oauth', {status: JSON.stringify({error: err})});  
+        }); 
+        
+ });
 
 module.exports = router; 

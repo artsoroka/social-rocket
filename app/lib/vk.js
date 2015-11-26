@@ -38,7 +38,7 @@ VK.prototype.authorize = function(code){
             if( data.error ) 
                 return reject('got response with error', data.error); 
                 
-            resolve(body); 
+            resolve(data); 
                 
         }); 
     }); 

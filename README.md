@@ -13,6 +13,10 @@ Update ```config/index.js``` or set your environment variables with ```.env``` f
 * SR_APP_PORT=8080
 * SR_VK_CLIENT_ID=12345
 * SR_VK_CLIENT_SECRET=yoursecretkey 
+* SR_DB_USER=dbadmin
+* SR_DB_PSWD=dbpassword 
+* SR_DB_NAME=socialrocket 
+* SR_DB_PORT=3306
 
 ### Fire up your server 
 

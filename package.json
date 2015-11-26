@@ -25,6 +25,8 @@
     "ejs": "^2.3.4",
     "express": "^4.13.3",
     "express-session": "^1.12.1",
+    "knex": "^0.9.0",
+    "mysql": "^2.9.0",
     "request": "^2.67.0",
     "session-file-store": "0.0.22"
   }
