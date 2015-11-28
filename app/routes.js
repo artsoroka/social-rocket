@@ -27,6 +27,37 @@ var getAccessToken = function(json){
     }); 
 }; 
 
+var createNewOauthUser = function(user){
+    return new Promise(function(resolve, reject){
+        db.transaction(function(transaction){
+            return  db.insert({
+                name: 'vkuser'
+            })
+            .returning('id')
+            .into('users')
+            .then(function (id) {
+                                
+                db.insert({
+                    user_id: id, 
+                    provider_id: 1, 
+                    oauth_id: user.oauth.userId
+                })
+                .into('oauth_users') 
+                .then(function(){
+                                    
+                    resolve({
+                        id: id
+                    }); 
+                                    
+                }); 
+                                
+            });
+            
+        });
+        
+    }); 
+}; 
+
 var authorizeUser = function(settings){
     return function(vkResponse){
         return new Promise(function(resolve, reject){
@@ -54,30 +85,17 @@ var authorizeUser = function(settings){
                      
                     console.log('user does not exist. Will create new');  
                     
-                    db.insert({
-                        name: 'vkuser'
-                    })
-                    .returning('id')
-                    .into('users')
-                    .then(function (id) {
-                        
-                        db.insert({
-                            user_id: id, 
-                            provider_id: 1, 
-                            oauth_id: vkResponse.userId
-                        })
-                        .into('oauth_users') 
-                        .then(function(){
-                            
-                            resolve({
-                                userId  : id, 
-                                vkUserId: vkResponse.userId, 
-                                token   : vkResponse.token
-                            }); 
-                            
-                        }); 
-                        
-                    });  
+                    createNewOauthUser({
+                        oauth: {
+                            userId: vkResponse.userId
+                        }
+                    }).then(function(user){
+                        resolve({
+                            userId  : user.id, 
+                            vkUserId: vkResponse.userId, 
+                            token   : vkResponse.token
+                        });
+                    }); 
                     
                 })
                 .catch(function(e){
