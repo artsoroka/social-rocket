@@ -30,30 +30,36 @@ var getAccessToken = function(json){
 var createNewOauthUser = function(user){
     return new Promise(function(resolve, reject){
         db.transaction(function(transaction){
-            return  db.insert({
-                name: 'vkuser'
-            })
+            db('users')
             .returning('id')
-            .into('users')
+            .insert({
+                name: null 
+            })
             .then(function (id) {
-                                
-                db.insert({
+                return db('oauth_users')
+                .returning('user_id')
+                .insert({
                     user_id: id, 
                     provider_id: 1, 
                     oauth_id: user.oauth.userId
-                })
-                .into('oauth_users') 
-                .then(function(){
-                                    
-                    resolve({
-                        id: id
-                    }); 
-                                    
                 }); 
-                                
-            });
+            })
+            .then(function(user_id){
+                transaction.commit(user_id); 
+            })
+            .catch(function(err){
+                console.log('during transaction an error occured', err); 
+                transaction.rollback();
+                throw err; 
+            }); 
             
-        });
+        })
+        .then(function(user_id){
+            resolve({
+                id: user_id
+            }); 
+        }); 
+        
         
     }); 
 }; 
