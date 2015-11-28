@@ -32,15 +32,18 @@ var authorizeUser = function(settings){
         return new Promise(function(resolve, reject){
             console.log('got vkResponse', vkResponse); 
             
-            db('users')
-                .where({vk_id: vkResponse.userId})
-                .select(['id', 'vk_id'])
+            db('oauth_users')
+                .where({
+                    oauth_id: vkResponse.userId, 
+                    provider_id: 1
+                })
+                .select(['user_id'])
                 .then(function(record){
                     console.log('select', record); 
                     if( record != false && record.length ) {
                         console.log('auth success: user found'); 
                         return resolve({
-                            userId: record[0].id,
+                            userId: record[0].user_id,
                             vkUserId: vkResponse.userId, 
                             token : vkResponse.token
                         }); 
@@ -52,16 +55,26 @@ var authorizeUser = function(settings){
                     console.log('user does not exist. Will create new');  
                     
                     db.insert({
-                        vk_id: vkResponse.userId
+                        name: 'vkuser'
                     })
                     .returning('id')
                     .into('users')
                     .then(function (id) {
                         
-                        resolve({
-                            userId  : id, 
-                            vkUserId: vkResponse.userId, 
-                            token   : vkResponse.token
+                        db.insert({
+                            user_id: id, 
+                            provider_id: 1, 
+                            oauth_id: vkResponse.userId
+                        })
+                        .into('oauth_users') 
+                        .then(function(){
+                            
+                            resolve({
+                                userId  : id, 
+                                vkUserId: vkResponse.userId, 
+                                token   : vkResponse.token
+                            }); 
+                            
                         }); 
                         
                     });  
